@@ -1,14 +1,11 @@
 import type { Metadata } from "next";
 import { Footer, Header } from "../components/layout/chrome";
+import { siteDescription, siteTitle } from "../lib/seo/site";
 import "./globals.css";
 
-const title = "CommitCred — Your Commits. Your Credit.";
-const description = "Turn your GitHub contributions into clean, editable sprint reports with source-linked evidence. No sign-up required.";
-
 export const metadata: Metadata = {
-  title: { default: title, template: "%s | CommitCred" },
-  description,
-  openGraph: { title, description, type: "website", siteName: "CommitCred" },
+  title: { default: siteTitle, template: "%s | CommitCred" },
+  description: siteDescription,
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -4,13 +4,14 @@
   "private": true,
   "engines": { "node": ">=22" },
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --hostname 127.0.0.1",
     "build": "next build",
-    "start": "next start",
+    "start": "next start --hostname 0.0.0.0 --port 8080",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "smoke:production": "node scripts/smoke-production.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.577.0",

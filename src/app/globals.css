@@ -185,3 +185,17 @@ textarea { resize: vertical; }
   html { scroll-behavior: auto; }
   .spinner { animation: none; }
 }
+
+.resource-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  margin-top: 24px;
+  list-style: none;
+}
+.resource-links a, .resource-page p a { color: var(--green); text-decoration: underline; }
+.resource-links a { display: inline-flex; align-items: center; min-height: 44px; }
+.resource-page ul { margin-block: 10px 16px; padding-inline-start: 24px; list-style: disc; }
+.resource-page li + li { margin-top: 6px; }
+.resource-page code { overflow-wrap: anywhere; }
+.example-actions { margin-block: 12px; }

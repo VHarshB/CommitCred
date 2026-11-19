@@ -107,10 +107,10 @@ export async function getActivity(repository: Repository, contributor: string, r
   for (let index = 0; index < detailTargets.length && !signal.aborted; index += DETAIL_CONCURRENCY) {
     const results = await Promise.allSettled(detailTargets.slice(index, index + DETAIL_CONCURRENCY).map(async (commit) => {
       const { data, more: moreFiles } = await github<CommitDetails>(`${path}/commits/${commit.sha}?per_page=50`, signal);
-      commit.files = (data.files ?? []).map((file) => file.filename.slice(0, 300));
+      commit.files = (data.files ?? []).slice(0, 50).map((file) => file.filename.slice(0, 300));
       commit.additions = data.stats?.additions ?? null;
       commit.deletions = data.stats?.deletions ?? null;
-      return moreFiles || !data.files;
+      return moreFiles || !data.files || data.files.length > 50;
     }));
     incomplete ||= results.some((result) => result.status === "rejected" || result.value);
     if (results.some((result) => result.status === "rejected" && result.reason instanceof AppError && result.reason.status === 429)) break;

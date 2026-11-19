@@ -63,3 +63,32 @@ test("example mode requires no GitHub request and identifies sample data", async
   await page.getByRole("button", { name: "Add accomplishment" }).click();
   await expect(page.getByText("User added")).toBeVisible();
 });
+
+test("handles rate limits, contributor discovery failure and an empty report", async ({ page }) => {
+  const repository = { owner: "team", name: "project", branch: "main", description: null, url: "https://github.com/team/project" };
+  let limited = true;
+  await page.route("**/api/github/repository?*", async (route) => {
+    if (limited) {
+      limited = false;
+      await route.fulfill({ status: 429, json: { error: "GitHub is limiting requests right now. Wait a few minutes, then try again." } });
+      return;
+    }
+    await route.fulfill({ json: { repository, contributors: [], partial: true } });
+  });
+  await page.route("**/api/report/generate", async (route) => {
+    expect(route.request().postDataJSON()).toMatchObject({ contributor: "manual-user", mode: "basic" });
+    await route.fulfill({ status: 422, json: { error: "No matching commits found for this contributor and date range." } });
+  });
+  await page.goto("/");
+  await page.getByLabel("GitHub repository").fill(repository.url);
+  await page.getByRole("button", { name: "Load repo" }).click();
+  const alert = page.locator("main").getByRole("alert");
+  await expect(alert).toContainText("GitHub is limiting requests");
+  await page.getByRole("button", { name: "Load repo" }).click();
+  const contributor = page.getByLabel("Contributor", { exact: true });
+  await expect(contributor).toBeEnabled();
+  await contributor.fill("manual-user");
+  await page.getByRole("button", { name: "Generate my report" }).click();
+  await expect(alert).toContainText("No matching commits");
+  await expect(page.getByRole("button", { name: "Generate my report" })).toBeEnabled();
+});

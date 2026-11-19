@@ -1,17 +1,42 @@
 # CommitCred
 
-Turn public GitHub contributions into an editable, source-linked sprint recap.
+CommitCred turns public GitHub commits into editable, source-linked sprint reports. Basic Report is free and requires no sign-in or credentials. Open the worked example to try the editor without GitHub.
 
-## Local development
+## Run locally
 
-Requires Node.js 22 or newer.
+Use Node.js 22 and the committed lockfile.
 
 ```sh
-npm install
+npm ci
 npm run dev
 ```
 
-Open http://localhost:3000. Paste a public repository URL, load contributors, choose a username and a UTC date range, then generate. The example works without external services. Reports live in the current browser tab and can be copied or downloaded as Markdown or plain text.
+Open http://127.0.0.1:3000. Load a public repository, choose or enter a username, and pick an inclusive UTC date range. The report includes activity that GitHub attributes to that account on the default branch. Branches, reviews, unlinked identities, and some collaborative work may need separate evidence. Copy Markdown or download Markdown or TXT. Edits stay in the current browser tab.
+
+For the same production process that App Runner uses:
+
+```sh
+npm run build
+npm start
+```
+
+From another terminal run `npm run smoke:production`. The server listens on `0.0.0.0:8080` and the health endpoint is `/api/health`. Set `COMMITCRED_EXPECTED_ORIGIN` in the smoke terminal only when the app is running with the matching `SITE_URL`.
+
+## Configuration
+
+Copy [`.env.example`](.env.example) to `.env.local` for local settings. AWS runtime configuration is documented separately.
+
+| Variable | Purpose |
+| --- | --- |
+| `SITE_URL` | Actual public HTTPS origin. Set at runtime in production. Blank or invalid values suppress canonicals and leave pages noindex. |
+| `GOOGLE_SITE_VERIFICATION` | Optional public verification tag value from Search Console. |
+| `GITHUB_TOKEN` | Optional server-side token for higher GitHub request limits. Scope it to public access. |
+| `AI_LOCAL_ENABLED` | Optional local development flag. Keep development on loopback. |
+| `OPENAI_API_KEY`, `OPENAI_MODEL` | Optional local OpenAI settings. Use a model supporting Chat Completions structured outputs. |
+
+Public Smart Report stays disabled. The local mode can send selected public commit evidence to OpenAI. The app stores no report history on the server.
+
+## Verify and deploy
 
 ```sh
 npm run lint
@@ -20,32 +45,9 @@ npm test
 npm run build
 npx playwright install chromium
 npm run test:e2e
+npm audit --omit=dev --audit-level=high
 ```
 
-The browser suite mocks API responses by default. Set `COMMITCRED_LIVE_TEST=1` to include the live GitHub acceptance tests at desktop and mobile widths. Set `PLAYWRIGHT_CHANNEL=chrome` to use an installed Google Chrome browser.
+Set `COMMITCRED_PRODUCTION_TEST=1` in the environment before Playwright to start the production server on port 8080. Set `COMMITCRED_LIVE_TEST=1` to include the live GitHub workflow on desktop and mobile. Set `PLAYWRIGHT_CHANNEL=chrome` to use an installed Chrome browser.
 
-## Project structure
-
-- `src/app` contains pages and server route handlers.
-- `src/components` contains the repository form, report editor, and shared layout.
-- `src/lib` contains validation, GitHub and OpenAI clients, quota enforcement, report generation, and exports.
-- `tests/unit` covers validation, attribution, generation, quotas, and exports. `tests/e2e` exercises the browser flow.
-
-## Configuration
-
-Copy `.env.example` to `.env.local` for optional settings. Basic Report requires no credentials. `GITHUB_TOKEN` raises GitHub's request limits. Use a credential with minimal permissions and access to public content only.
-
-Smart Report requires `OPENAI_API_KEY` and `OPENAI_MODEL`. Choose a model supporting Chat Completions structured outputs, such as `gpt-4.1-mini` if available on your account. Set `AI_LOCAL_ENABLED=true` for local development.
-
-On Vercel, set `AI_PUBLIC_ENABLED=true`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, and `AI_CLIENT_HASH_SECRET` (at least 32 random characters) along with the OpenAI settings. Redis atomically reserves a share of the UTC daily budget before calling OpenAI. Configure `AI_DAILY_BUDGET` and `AI_CLIENT_DAILY_LIMIT` to size the daily request allowance. Public Smart Report fails closed when durable quota checks or Vercel client identity are unavailable. Use separate Redis stores for environments that need independent budgets.
-
-## Deploy to Vercel
-
-1. Commit the verified files and push to the CommitCred GitHub repository.
-2. Import the repository as a Vercel project. Use the Next.js preset and Node.js 22 or newer.
-3. Add any optional server-side environment variables in Project Settings.
-4. Deploy. Open the deployment and generate a Basic Report against a public repository. If Smart Report is enabled, verify generation and quotas with your configured services.
-
-## Coverage
-
-The report covers GitHub-attributed commits on the repository's default branch. Related branches, unlinked identities, co-authorship, reviews, and other work may be missed. UTC dates are inclusive. GitHub's date filtering, bounded pagination, and available commit details can limit coverage. Merge commits appear as integration activity, and merge diffs are excluded from authorship summaries. Review all generated statements and source links before sharing. Smart Report sends a limited set of public evidence to OpenAI.
+Use the [AWS deployment runbook](docs/AWS_DEPLOYMENT.md) and [owner checklist](docs/OWNER_FINAL_STEPS.md). App Runner source deployment requires an eligible AWS account. Ordinary CI requires no AWS credentials.
