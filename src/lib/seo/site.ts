@@ -14,7 +14,7 @@ export const indexablePaths = [
 
 type IndexablePath = typeof indexablePaths[number];
 
-export function siteOrigin(value = process.env.SITE_URL): URL | undefined {
+export function siteOrigin(value = process.env.COMMITCRED_NETLIFY_ORIGIN ?? process.env.SITE_URL): URL | undefined {
   if (!value || !/^https:\/\/[a-z0-9.-]+\/?$/i.test(value.trim())) return;
   try {
     const url = new URL(value.trim());

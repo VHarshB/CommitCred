@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { netlifyBuildOrigin } from "./src/lib/seo/netlify-origin";
 
 const contentSecurityPolicy = [
   "default-src 'self'",
@@ -11,7 +12,10 @@ const contentSecurityPolicy = [
   "form-action 'self'",
 ].join("; ");
 
+const netlifyOrigin = netlifyBuildOrigin(process.env);
+
 const config: NextConfig = {
+  ...(netlifyOrigin !== undefined ? { env: { COMMITCRED_NETLIFY_ORIGIN: netlifyOrigin } } : {}),
   poweredByHeader: false,
   async headers() {
     return [

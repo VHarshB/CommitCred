@@ -1,19 +1,18 @@
 # Release verification
 
-Local verification ran in clean temporary copies on Node.js 22.23.4, with Next.js 16.4.6 from the lockfile and installed Chrome. The first in-place install encountered a Windows lock on a native dependency. The clean baseline install and all baseline checks passed, including 21 unit tests and 7 browser tests with live GitHub enabled.
+The Netlify migration was tested in a clean temporary copy with Node.js 22.23.4, Next.js 16.4.6 from the lockfile, and installed Chrome.
 
-| Final check | Exit | Observed result |
-| --- | --- | --- |
-| `npm ci --include=dev` | 0 | Lockfile install completed in a clean verification directory. |
-| `npm run lint` | 0 | No lint errors. |
-| `npm run typecheck` | 0 | No TypeScript errors. |
-| `npm test` | 0 | 41 passing tests in 6 files. |
-| `npm run build` | 0 | Optimized production build completed. |
-| `npm run test:e2e` with production mode, Chrome, test origin, and live GitHub enabled | 0 | 10 passing tests, including real `nodejs/node` reports at 390 and 1440 px. Checked SHA links, edits, clipboard, Markdown and TXT exports across live and mocked paths, keyboard interaction, touch, and four viewport widths. |
-| `npm run test:e2e -- --grep 'production HTTP surface'` with a blank origin | 0 | Production smoke passed without canonical, sitemap entries, or indexable page metadata. |
-| `npm audit --omit=dev --audit-level=high` | 0 | Registry reported zero known production dependency vulnerabilities for the committed lockfile. |
-| axe WCAG 2.1 A/AA scan in Chrome | 0 | Zero detected violations across home, privacy, example, both guides, and sample report at 375 and 1440 px. This was an automated check, not a full accessibility conformance audit. |
+| Check | Result |
+| --- | --- |
+| `npm ci --include=dev --no-audit` | Passed. |
+| `npm run lint` | Passed. |
+| `npm run typecheck` | Passed. |
+| `npm test` | 49 passed in 7 files, including Netlify production origin selection and preview noindex policy. |
+| `npm run build` | Passed. |
+| `npm run test:e2e` with the local production build | 10 passed. Mocked journeys covered 375, 390, 768, and 1440 px. Live `nodejs/node` reports passed at 390 and 1440 px. |
+| `netlify serve --offline --context production --port 8889` | Netlify CLI 27.20.0 and OpenNext 5.16.8 built the Next.js app and bundled the server function. The adapter was explicitly loaded only in the unlinked temporary copy. |
+| `npm run test:e2e` against the Netlify emulator | 10 passed. Both live GitHub report flows, API validation, and SEO smoke passed through the OpenNext bundle. |
 
-The production browser suite invoked `npm start` from the same project build used by App Runner and called `scripts/smoke-production.mjs` at `http://127.0.0.1:8080`. It verified HTTP 200 on home, privacy, example, both guides, report shell, CSS, icon, 1200×630 PNG, robots, sitemap, and health. It checked HTTP 400 for invalid URLs and malformed JSON, 413 for oversized requests, and a 503 no-store response for production Smart Report. With a synthetic test origin it parsed canonicals and JSON-LD and checked the sitemap membership. The test origin was used only in local verification and the CI job.
+The browser suite checks source links, editing, clipboard, Markdown and TXT export across live and mocked paths, keyboard navigation, and touch. The production smoke script checks pages, built CSS, the icon, the 1200×630 social PNG, robots, sitemap, canonical URLs, structured data, noindex on the report, request-validation errors, and disabled production Smart Report.
 
-`aws sts get-caller-identity` exited 253 because no credentials were available. No AWS resource was created and no AWS URL was verified. Live OpenAI/Bedrock, AWS managed runtime, live SEO tools and Search Console checks were not run. GitHub Actions is configured for future pushes and pull requests.
+No hosted deployment was performed. Netlify CLI reported `NOT_LOGGED_IN` and no linked project. The imported project’s real HTTPS origin, cloud function routing, and third-party crawler rendering need verification after the owner authorizes GitHub access and imports the site. The origin used in local tests is a test fixture.

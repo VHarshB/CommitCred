@@ -1,16 +1,15 @@
 # CommitCred operations
 
-Use App Runner **Activity**, **Logs**, and **Metrics** first. Match the current service deployment to its verified source revision. Keep GitHub tokens, provider request bodies, session reports, and other secrets out of log messages and incident transcripts.
+Use Netlify’s deploy log to find the deployed Git revision and OpenNext build results. Check the server function logs when dynamic pages or API calls fail. Keep GitHub tokens, report contents, and request bodies out of logs and incident transcripts.
 
 | Symptom | Diagnosis and recovery |
 | --- | --- |
-| Build fails | Check deployment logs for Node 22, repository root, and the lockfile. Reproduce with `npm ci --include=dev` and `npm run build`. |
-| Health checks fail | Verify HTTP `/api/health`, 8080, and binding to `0.0.0.0`. The response is independent of GitHub and OpenAI. Check startup logs and process exit status. |
-| CSS or image missing | Confirm the tested release contains the build under `.next` in the copied application directory. Run the production smoke script, then check static CSS, icon, and card responses. |
-| GitHub 403 or 429 | A private/inaccessible repo can look missing. For a rate-limit response, wait before retrying, check token scope and GitHub quota, and review request volume. The app can share upstream quotas across users and instances. |
-| Busy or timed out | Retry after a short wait or narrow the date range. Request fan-out and concurrent report work are bounded per instance. Compare CloudWatch saturation and GitHub errors before changing limits. Consider paid WAF protection only with approval. |
-| Empty report | Check the linked GitHub author, UTC date range, and default branch. A missing contributor may be typed manually. |
-| Repeated 500s | Compare the recent deployment revision, CloudWatch errors, and request timing. Reproduce with a safe public fixture and roll back if the issue starts with a release. |
-| Canonicals absent or wrong | Read the deployed `run.env` and verify the origin is the actual HTTPS hostname without a path, port, query, or fragment. Run smoke with the matching expected origin. A blank preview intentionally returns noindex and an empty sitemap. |
-| Smart Report unavailable | Expected on every production service. No paid public provider or quota store is provisioned. For local testing use loopback development, a permitted OpenAI key/model, and explicit opt-in. |
-| GitHub quota abuse | Instance load shedding limits concurrent work, not sustained volume. Review ingress metrics and use measured WAF rate rules for distributed protection if approved. Avoid logging full query strings when configuring optional edge logging. |
+| Build fails | Confirm Node.js 22, repository root, lockfile, `npm run build`, `.next`, and the automatically detected Next.js adapter. |
+| APIs show 404 | Check the deploy log for the OpenNext function and routing configuration. Confirm the project was imported from Git and did not get deployed as a static folder. |
+| Site or function returns 5xx | Verify `/api/health`, inspect the deploy and function logs, and compare with the last known good revision. Roll back from **Deploys** if needed. |
+| CSS or share image missing | Run the production smoke script against the public deployment. Check its built CSS, icon, and `/opengraph-image` responses. |
+| GitHub 403 or 429 | Verify the repository is public. For a quota error, wait before retrying and check whether an optional server-side token is needed. |
+| Report is empty | Check the linked GitHub author, inclusive UTC date range, and default branch. A username can be entered manually. |
+| Canonicals absent or wrong | Confirm the build was a production deploy. Check its primary HTTPS hostname and any `SITE_URL` override. Preview builds intentionally emit noindex and an empty sitemap. |
+| Smart Report unavailable | Expected in production. Basic Report uses GitHub only. |
+| Site paused | Check shared team credits in **Usage & billing**. A Free project resumes when usage resets in the next billing cycle. |

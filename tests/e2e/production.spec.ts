@@ -4,8 +4,8 @@ import { expect, test } from "@playwright/test";
 
 const exec = promisify(execFile);
 
-test("verifies the App Runner production HTTP surface", async ({ baseURL }) => {
-  test.skip(process.env.COMMITCRED_PRODUCTION_TEST !== "1", "Run against the AWS production start command.");
+test("verifies the production HTTP surface", async ({ baseURL }) => {
+  test.skip(process.env.COMMITCRED_PRODUCTION_TEST !== "1", "Run against a production build.");
   const { stdout } = await exec(process.execPath, ["scripts/smoke-production.mjs", baseURL!]);
   console.log(stdout.trim());
   expect(stdout).toContain("Production smoke passed.");
