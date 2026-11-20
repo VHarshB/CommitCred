@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { FilePenLine, GitCommitHorizontal, Github, Sparkles } from "lucide-react";
 import { GeneratorForm } from "../components/home/generator-form";
-import { smartEnabled } from "../lib/ai/availability";
+import { aiSettings } from "../lib/ai/availability";
 import { homeStructuredData, pageMetadata, serializeJsonLd, siteDescription, siteOrigin, siteTitle } from "../lib/seo/site";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +20,7 @@ export default function Home() {
         <span className="mobile-title">Your code.<br/><em>Your credit.</em></span></h1>
       <p>Turn your GitHub contributions into a clear, evidence-backed sprint report in seconds.</p>
     </section>
-    <div className="narrow" id="report-generator"><GeneratorForm smartAvailable={smartEnabled()}/></div>
+    <div className="narrow" id="report-generator"><GeneratorForm smartConfigured={Boolean(aiSettings())}/></div>
     <section className="site-width how" id="how-it-works">
       <h2>How it works</h2>
       <div className="steps">

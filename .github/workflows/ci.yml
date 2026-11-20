@@ -27,6 +27,7 @@ jobs:
         run: npm run test:e2e
         env:
           COMMITCRED_PRODUCTION_TEST: "1"
+          COMMITCRED_SMART_UI_TEST: "1"
           # Synthetic SEO fixture used only by this local CI process.
           COMMITCRED_EXPECTED_ORIGIN: https://commitcred-ci-fixture.dev
       - run: npm audit --omit=dev --audit-level=high

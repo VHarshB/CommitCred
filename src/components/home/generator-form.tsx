@@ -6,6 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { exampleReport } from "../../lib/report/example";
 import { saveReport } from "../../lib/report/session";
+import { clearSmartRequest, pendingSmartRequest, smartRequestId } from "../../lib/report/request-id";
+import { SmartAccess, useSmartAccess } from "./smart-access";
 import type { Contributor, Report, Repository } from "../../lib/report/types";
 import { rangeSchema, recentRange, repositorySchema, usernameSchema } from "../../lib/validation/input";
 
@@ -17,7 +19,9 @@ interface RepositoryResult {
 
 const periods = [7, 14, 30];
 
-export function GeneratorForm({ smartAvailable }: { smartAvailable: boolean }) {
+export function GeneratorForm({ smartConfigured }: { smartConfigured: boolean }) {
+  const smart = useSmartAccess(smartConfigured);
+  const smartAvailable = smart.access.enabled;
   const router = useRouter();
   const controller = useRef<AbortController | null>(null);
   const [url, setUrl] = useState("");
@@ -26,7 +30,7 @@ export function GeneratorForm({ smartAvailable }: { smartAvailable: boolean }) {
   const [menu, setMenu] = useState(false);
   const [period, setPeriod] = useState("7");
   const [customRange, setCustomRange] = useState(recentRange(7));
-  const [mode, setMode] = useState<Report["mode"]>(smartAvailable ? "smart" : "basic");
+  const [mode, setMode] = useState<Report["mode"]>("basic");
   const [status, setStatus] = useState<"idle" | "loading" | "generating">("idle");
   const [error, setError] = useState("");
   const [fallback, setFallback] = useState<Report | null>(null);
@@ -71,8 +75,8 @@ export function GeneratorForm({ smartAvailable }: { smartAvailable: boolean }) {
     }
   }
 
-  async function generate(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function generate(event?: FormEvent<HTMLFormElement>, consentReady = false) {
+    event?.preventDefault();
     if (busy) return;
     if (!result) {
       await loadRepository();
@@ -84,17 +88,42 @@ export function GeneratorForm({ smartAvailable }: { smartAvailable: boolean }) {
       setError(!username.success ? username.error.issues[0].message : dates.error!.issues[0].message);
       return;
     }
+    const isSmart = mode === "smart";
+    const body = JSON.stringify({ repository: result.repository.url, contributor: username.data, range: dates.data, mode });
+    if (isSmart && !consentReady) {
+      if (!smartAvailable) {
+        setError("Smart Report is temporarily unavailable. You can continue with Basic Report.");
+        return;
+      }
+      if (smart.access.totalRemaining === 0 && (smart.access.consented || smart.access.session === "google") && !pendingSmartRequest(body)) {
+        smart.setPanel("credits");
+        return;
+      }
+      if (!smart.access.consented) {
+        smart.setPanel("consent");
+        return;
+      }
+    }
     const request = begin("generating");
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (isSmart) headers["Idempotency-Key"] = smartRequestId(body);
     try {
       const response = await fetch("/api/report/generate", {
-        method: "POST", headers: { "Content-Type": "application/json" }, signal: request.signal,
-        body: JSON.stringify({ repository: result.repository.url, contributor: username.data, range: dates.data, mode }),
+        method: "POST", headers, signal: request.signal,
+        body,
       });
       const data = await response.json();
       if (!response.ok) {
         if (data.fallback) setFallback(data.fallback);
+        if (isSmart) {
+          if (!["smart_retry", "in_flight", "smart_unavailable"].includes(data.code)) clearSmartRequest();
+          void smart.refresh();
+          if (data.code === "no_credits") smart.setPanel("credits");
+          if (["auth_required", "consent_required"].includes(data.code)) smart.setPanel("consent");
+        }
         throw new Error(data.error);
       }
+      if (isSmart) clearSmartRequest();
       openReport(data);
     } catch (error) {
       if (!request.signal.aborted) setError(error instanceof TypeError ? "Could not connect. Check your connection and try again." : (error as Error).message);
@@ -104,7 +133,7 @@ export function GeneratorForm({ smartAvailable }: { smartAvailable: boolean }) {
   }
 
   return <div className="generator card">
-    <form onSubmit={generate} noValidate>
+    <form onSubmit={(event) => void generate(event)} noValidate>
       <div className="field">
         <label htmlFor="repository-url">GitHub repository</label>
         <div className="repository-row">
@@ -145,10 +174,12 @@ export function GeneratorForm({ smartAvailable }: { smartAvailable: boolean }) {
         <legend>Report mode</legend>
         <div className="mode-options">
           <label><input type="radio" name="mode" checked={mode === "basic"} onChange={() => { setMode("basic"); setFallback(null); }}/><span>Basic Report <small>No AI</small></span></label>
-          <label><input type="radio" name="mode" checked={mode === "smart"} onChange={() => setMode("smart")} disabled={!smartAvailable}/><span><Sparkles size={15}/> Smart Report <small>{smartAvailable ? "AI enhanced" : "Unavailable"}</small></span></label>
+          <label><input type="radio" name="mode" checked={mode === "smart"} onChange={() => setMode("smart")} disabled={!smartAvailable}/><span><Sparkles size={15}/> Smart Report <small>{smartAvailable ? "Gemini AI" : "Unavailable"}</small></span></label>
         </div>
-        <p className="field-help">{mode === "smart" ? "Smart Report sends selected public commit evidence to OpenAI." : !smartAvailable ? "Basic Report works without AI." : ""}</p>
+        <p className="field-help">{smartAvailable ? "3 free AI reports for guests, plus 3 one-time credits when you link a new Google account. Basic Report is always free." : "Basic Report works without AI."}</p>
       </fieldset>
+      <SmartAccess controls={smart} onBasic={() => { setMode("basic"); setError(""); }}
+        onConsent={() => void generate(undefined, true)}/>
       {error && <div className="notice error" role="alert">{error}{fallback && <button type="button" className="button secondary" onClick={() => openReport(fallback)}>Use Basic Report</button>}</div>}
       <button type="submit" className="button primary generate" disabled={!result || busy}>
         {status === "generating" ? <LoaderCircle className="spinner" size={18}/> : null}Generate my report<ArrowRight size={18}/>

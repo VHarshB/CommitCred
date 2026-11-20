@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applySmartOutput, enhanceReport } from "../../src/lib/ai/smart";
+import { applySmartOutput, smartEvidence } from "../../src/lib/ai/smart";
 import { formatReport, reportFilename } from "../../src/lib/export/report";
 import { buildReport } from "../../src/lib/report/basic";
 import { exampleReport } from "../../src/lib/report/example";
@@ -41,11 +41,16 @@ describe("reports and exports", () => {
     expect(applySmartOutput(report, modelOutput(sha), allowed).mode).toBe("smart");
     expect(() => applySmartOutput(report, modelOutput("fake"), allowed)).toThrow();
     expect(() => applySmartOutput(report, {}, allowed)).toThrow();
+    expect(() => applySmartOutput(report, {
+      accomplishments: [{ statement: "Tests passed and uptime improved by 30%.", shas: [sha] }],
+      technicalHighlights: [],
+    }, allowed)).toThrow();
   });
 
-  it("offers Basic guidance when Smart has no authored evidence", async () => {
-    const report = { ...exampleReport(), evidenceLinks: [] };
-    await expect(enhanceReport(report, AbortSignal.timeout(100))).rejects.toMatchObject({ code: "smart_failed" });
+  it("does not use merge commits or empty evidence for Smart Report", () => {
+    expect(smartEvidence({ ...exampleReport(), evidenceLinks: [] })).toEqual([]);
+    const report = exampleReport();
+    expect(smartEvidence({ ...report, evidenceLinks: report.evidenceLinks.map((commit) => ({ ...commit, merge: true })) })).toEqual([]);
   });
 
   it("exports edited text and matching evidence URLs with safe filenames", () => {

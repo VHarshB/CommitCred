@@ -104,6 +104,7 @@ export async function getActivity(repository: Repository, contributor: string, r
   const authored = [...commits.values()].filter((commit) => !commit.merge);
   const detailTargets = authored.slice(0, DETAIL_LIMIT);
   let incomplete = false;
+  let detailFetchFailed = false;
   for (let index = 0; index < detailTargets.length && !signal.aborted; index += DETAIL_CONCURRENCY) {
     const results = await Promise.allSettled(detailTargets.slice(index, index + DETAIL_CONCURRENCY).map(async (commit) => {
       const { data, more: moreFiles } = await github<CommitDetails>(`${path}/commits/${commit.sha}?per_page=50`, signal);
@@ -112,11 +113,12 @@ export async function getActivity(repository: Repository, contributor: string, r
       commit.deletions = data.stats?.deletions ?? null;
       return moreFiles || !data.files || data.files.length > 50;
     }));
+    detailFetchFailed ||= results.some((result) => result.status === "rejected");
     incomplete ||= results.some((result) => result.status === "rejected" || result.value);
     if (results.some((result) => result.status === "rejected" && result.reason instanceof AppError && result.reason.status === 429)) break;
   }
   if (incomplete || signal.aborted || authored.length > DETAIL_LIMIT) {
     warnings.push("File and line statistics are available for only part of this history. Remaining items use commit messages as evidence.");
   }
-  return { commits: [...commits.values()], warnings };
+  return { commits: [...commits.values()], warnings, detailFetchFailed: detailFetchFailed || signal.aborted };
 }

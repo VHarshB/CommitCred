@@ -31,10 +31,10 @@ Copy [`.env.example`](.env.example) to `.env.local` for local settings. Netlify 
 | `SITE_URL` | Optional public HTTPS override. Netlify production uses the assigned primary URL at build time by default. Preview builds and local builds without an origin emit noindex. |
 | `GOOGLE_SITE_VERIFICATION` | Optional public verification tag value from Search Console. |
 | `GITHUB_TOKEN` | Optional server-side token for higher GitHub request limits. Scope it to public access. |
-| `AI_LOCAL_ENABLED` | Optional local development flag. Keep development on loopback. |
-| `OPENAI_API_KEY`, `OPENAI_MODEL` | Optional local OpenAI settings. Use a model supporting Chat Completions structured outputs. |
+| `AI_PUBLIC_ENABLED`, `AI_BETA_ENABLED` | Both off by default. See the owner setup before any AI use. |
+| Supabase, Gemini, and Turnstile settings | Optional Smart Report configuration. See the owner setup for scopes, limits, and eligibility. |
 
-Public Smart Report stays disabled. The local mode can send selected public commit evidence to OpenAI. The app stores no report history on the server.
+Smart Report uses Gemini when enabled by the owner. Guests can earn three lifetime reports after consent and verification. Linking an unused verified Google identity adds three once. Basic stays free and account-free. Full reports and edits are not stored server-side. See [Gemini and Google setup](docs/GEMINI_AUTH_OWNER_SETUP.md) and [AI security notes](docs/AI_SECURITY_NOTES.md).
 
 ## Verify and deploy
 

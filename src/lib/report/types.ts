@@ -26,6 +26,7 @@ export interface Commit {
 }
 
 export interface Activity {
+  detailFetchFailed?: boolean;
   commits: Commit[];
   warnings: string[];
 }

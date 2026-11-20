@@ -56,7 +56,7 @@ for (const width of [375, 390, 768, 1440]) {
 }
 
 test("example mode requires no GitHub request and identifies sample data", async ({ page }) => {
-  await page.route("**/api/**", () => { throw new Error("Example mode must use its own data"); });
+  await page.route(/\/api\/(github\/|report\/generate)/, () => { throw new Error("Example mode must use its own data"); });
   await page.goto("/");
   await page.getByRole("button", { name: "Try an example" }).click();
   await expect(page.getByText("SAMPLE DATA", { exact: true })).toBeVisible();

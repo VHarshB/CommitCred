@@ -22,7 +22,7 @@ Netlify’s current OpenNext adapter is applied automatically at build time. It 
 | `SITE_URL` | Optional production build override. Leave unset for the included address. If overriding, use the actual public HTTPS origin without a path. Verify it in **Production domains** first. Changing it or renaming the site requires a new production build. |
 | `GITHUB_TOKEN` | Optional runtime secret if public API quota becomes a problem. Set it in **Project configuration → Environment variables** with server/function availability. Use minimum permissions and keep it out of Git and client code. |
 | `GOOGLE_SITE_VERIFICATION` | Optional public verification tag value. Set with function availability, then deploy once when ready to verify in Search Console. |
-| `AI_LOCAL_ENABLED`, `OPENAI_API_KEY`, `OPENAI_MODEL` | Local loopback development only. Leave unset on Netlify. Smart Report is disabled in production. |
+| `AI_PUBLIC_ENABLED`, `AI_BETA_ENABLED` | Leave both false for a Basic-only launch. Optional Smart Report uses the [separate owner setup](GEMINI_AUTH_OWNER_SETUP.md). |
 
 Configure any optional settings you already need before the first build. Use the assigned production URL rather than a deploy permalink or preview URL for live acceptance checks. [Netlify build variables](https://docs.netlify.com/build/configure-builds/environment-variables/)
 
